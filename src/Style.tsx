@@ -30,10 +30,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     text_lg: {
       fontSize:"20px",
       fontFamily: "BinancePlex,Arial,sans-serif!important",
-      color: "#b5bbc2",
+      color: "#e35561",
     },
     text_xs: {
-      fontSize: "12px"
+      fontSize: "12px",
+      color: "#b5bbc2"
     },
     container: {
       width: "320px",
