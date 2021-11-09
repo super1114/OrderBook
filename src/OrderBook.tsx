@@ -1,21 +1,43 @@
 import React, { useEffect, useState } from 'react';
-
 import Grid from '@material-ui/core/Grid';
 import Box from '@material-ui/core/Box';
 import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
+import Select from "@material-ui/core/Select";
+import MenuItem from "@material-ui/core/MenuItem";
 import Binance from 'binance-api-node';
-import { ThemeContext } from "./Context";
 import useStyles from './Style';
 const client = Binance();
-
 export default function OrderBook() {
+  const pairlist = [{
+      no:0,
+      name:"BTCUSDT",
+      sym1:"BTC",
+      sym2:"USDT"
+  },{
+      no:1,
+      name:"BTCBUSD",
+      sym1:"BTC",
+      sym2:"BUSD"
+  },{
+      no:2,
+      name:"ETHUSDT",
+      sym1:"ETH",
+      sym2:"USDT"
+  },{
+      no:3,
+      name:"ETHBUSD",
+      sym1:"ETH",
+      sym2:"BUSD"
+  }];
   const classes = useStyles();
   const [bids, setBids] = useState([]);
   const [asks, setAsks] = useState([]);
-  const context = React.useContext(ThemeContext);
-  
-  const getData = () => {
-    return client.ws.depth(context.pair.name, depth => {
+  const [pair, setPair] = useState(pairlist[0]);
+  const handleChange = (event:any) => {
+    setPair(pairlist[event.target.value]);
+  }
+  useEffect(()=> {
+    client.ws.depth(pair.name, depth => {
       let temp_bids:any = depth.bidDepth.filter(function(e) { return parseFloat(e.quantity) !== 0 }).slice(0,12)
       let temp_asks:any = depth.askDepth.filter(function(e) { return parseFloat(e.quantity) !== 0 }).slice(0,12).reverse();
       if(temp_bids.length==12&&temp_asks.length==12) {
@@ -23,26 +45,35 @@ export default function OrderBook() {
         setAsks(temp_asks)
       }
     });
+  },[pair]);
+
+  if(bids.length==0) return <Box className={classes.container+" "+classes.text_white}><HeaderTool />Loading Order Book From Binance</Box>;
+  function HeaderTool() {
+    return (
+    <Grid container className={classes.top_row+" "+classes.text_white} style={{display:"flex", alignItems:"center"}} >
+        <Grid item xs={8} style={{fontSize:"20px"}}>
+        Order Book
+        </Grid>
+        <Grid className={classes.header_text+" "+classes.text_right} item xs={4}>
+            <Select
+                onChange={handleChange}
+            >
+                {pairlist.map((item, index)=><MenuItem value={pairlist.indexOf(item)} key={index}><span className={classes.text_white}>{item.name}</span></MenuItem>)}
+            </Select>
+        </Grid>
+    </Grid>
+    );
   }
-
-  var func:any[]= [];
-  useEffect(()=> {
-    /** This code is for disconnecting previous websocket and connecting new websocket when pair changed. **/
-    func.push(getData());
-    if(func.length>1) func[func.length-2]();
-  },[context.pair.name]);
-
-  if(bids.length==0) return <Box className={classes.container+" "+classes.text_white}>Loading Order Book From Binance</Box>;
   function TopRow() {
     return (
       <Grid container className={classes.top_row} >
         <Grid className={classes.header_text} item xs={4} >
-          Price({context.pair.sym2})
+          Price({pair.sym2})
         </Grid>
         <Grid className={classes.header_text+" "+classes.text_right} item xs={4}>
-          Amount({context.pair.sym1})
+          Amount({pair.sym1})
         </Grid>
-        <Grid className={classes.header_text+" "+classes.text_right} classes={{}} item xs={4}>
+        <Grid className={classes.header_text+" "+classes.text_right} item xs={4}>
           Total
         </Grid>
       </Grid>
@@ -77,10 +108,11 @@ export default function OrderBook() {
           </Grid>
   }
   return  (<Box className={classes.container}>
+            <HeaderTool />
             <TopRow />
-            {asks&&asks.map((item, index) => (<RowItem item={item} color={classes.text_red} key={index}/>) )}
+            {asks && asks.map((item, index) => (<RowItem item={item} color={classes.text_red} key={index}/>) )}
             <MiddleRow />
-            {bids&&bids.map((item, index) => {
+            {bids && bids.map((item, index) => {
               return (<RowItem item={item} color={classes.text_green} key={index}/>)
             } )}
           </Box>)
